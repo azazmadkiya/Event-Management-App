@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +31,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -47,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.model.EventEntity
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -370,21 +375,61 @@ fun AddEditEventDialog(
     onDismiss: () -> Unit,
     onSave: (EventEntity) -> Unit
 ) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf(eventToEdit?.title ?: "") }
     var eventType by remember { mutableStateOf(eventToEdit?.eventType ?: "Gathering") }
     var venueName by remember { mutableStateOf(eventToEdit?.venueName ?: "") }
     var venueAddress by remember { mutableStateOf(eventToEdit?.venueAddress ?: "") }
-    var dateString by remember {
-        mutableStateOf(
-            if (eventToEdit != null)
-                SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date(eventToEdit.startTimestamp))
-            else
-                SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date(System.currentTimeMillis() + 86400000L))
-        )
+    var startTimestamp by remember {
+        mutableStateOf(eventToEdit?.startTimestamp ?: (System.currentTimeMillis() + 86400000L))
     }
     var description by remember { mutableStateOf(eventToEdit?.description ?: "") }
     var hostName by remember { mutableStateOf(eventToEdit?.hostName ?: "") }
     var dressCode by remember { mutableStateOf(eventToEdit?.dressCode ?: "Formal") }
+
+    val calendar = remember(startTimestamp) {
+        Calendar.getInstance().apply { timeInMillis = startTimestamp }
+    }
+    val dateFormatter = remember { SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.US) }
+    val formattedDisplayDate = dateFormatter.format(Date(startTimestamp))
+
+    val openDateTimePicker = {
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        DatePickerDialog(
+            context,
+            { _, pickedYear, pickedMonth, pickedDay ->
+                val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                val minute = calendar.get(Calendar.MINUTE)
+
+                val updatedCal = Calendar.getInstance().apply {
+                    set(Calendar.YEAR, pickedYear)
+                    set(Calendar.MONTH, pickedMonth)
+                    set(Calendar.DAY_OF_MONTH, pickedDay)
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                }
+                startTimestamp = updatedCal.timeInMillis
+
+                TimePickerDialog(
+                    context,
+                    { _, pickedHour, pickedMinute ->
+                        updatedCal.set(Calendar.HOUR_OF_DAY, pickedHour)
+                        updatedCal.set(Calendar.MINUTE, pickedMinute)
+                        startTimestamp = updatedCal.timeInMillis
+                    },
+                    hour,
+                    minute,
+                    false
+                ).show()
+            },
+            year,
+            month,
+            day
+        ).show()
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -409,11 +454,23 @@ fun AddEditEventDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    value = dateString,
-                    onValueChange = { dateString = it },
-                    label = { Text("Date & Time (yyyy-MM-dd HH:mm)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("edit_event_date_input")
+                    value = formattedDisplayDate,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Event Date & Time (Tap for Calendar) *") },
+                    trailingIcon = {
+                        IconButton(onClick = { openDateTimePicker() }) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = "Open Calendar Date Picker",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { openDateTimePicker() }
+                        .testTag("edit_event_date_input")
                 )
                 OutlinedTextField(
                     value = venueName,
@@ -456,25 +513,20 @@ fun AddEditEventDialog(
             Button(
                 onClick = {
                     if (title.isNotBlank() && venueAddress.isNotBlank()) {
-                        val parsedTimestamp = try {
-                            SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).parse(dateString)?.time ?: System.currentTimeMillis()
-                        } catch (e: Exception) {
-                            System.currentTimeMillis()
-                        }
                         val eventId = eventToEdit?.id ?: "event_${UUID.randomUUID()}"
                         val event = EventEntity(
                             id = eventId,
                             title = title.trim(),
                             eventType = eventType.trim(),
-                            startTimestamp = parsedTimestamp,
-                            endTimestamp = parsedTimestamp + 14400000L,
+                            startTimestamp = startTimestamp,
+                            endTimestamp = startTimestamp + 14400000L,
                             venueName = venueName.trim(),
                             venueAddress = venueAddress.trim(),
                             description = description.trim(),
                             dressCode = dressCode.trim(),
                             hostName = hostName.trim(),
                             hostContact = "",
-                            rsvpDeadlineTimestamp = parsedTimestamp - 86400000L
+                            rsvpDeadlineTimestamp = startTimestamp - 86400000L
                         )
                         onSave(event)
                     }

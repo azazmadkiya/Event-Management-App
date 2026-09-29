@@ -2,9 +2,56 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Central Circle Backing -->
+    <path
+        android:fillColor="#0D9488"
+        android:pathData="M54,24 A30,30 0 1,1 53.9,24 Z" />
+
+    <!-- Envelope Icon (Top) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7zM12,11.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z"/>
+        android:pathData="M38,32h32c2.2,0 4,1.8 4,4v20c0,2.2 -1.8,4 -4,4H38c-2.2,0 -4,-1.8 -4,-4V36c0,-2.2 1.8,-4 4,-4z" />
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M38,36l16,11l16,-11v-2H38z" />
+
+    <!-- WhatsApp Speech Bubble (Top Left) -->
+    <path
+        android:fillColor="#25D366"
+        android:pathData="M32,32c-3.3,0 -6,2.7 -6,6c0,1.2 0.8,2.3 1.8,3l-1.8,4.5l4.5,-1.2c0.5,0.3 1,0.7 1.5,0.7c3.3,0 6,-2.7 6,-6s-2.7,-6 -6,-6z" />
+
+    <!-- Location Pin (Center) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M54,42c-8.3,0 -15,6.7 -15,15c0,10.5 15,25 15,25s15,-14.5 15,-25c0,-8.3 -6.7,-15 -15,-15zm0,20.5c-3,0 -5.5,-2.5 -5.5,-5.5s2.5,-5.5 5.5,-5.5s5.5,2.5 5.5,5.5s-2.5,5.5 -5.5,5.5z" />
+
+    <!-- Inner Pin White Dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,53.5 A3.5,3.5 0 1,1 53.9,53.5 Z" />
+
+    <!-- People Silhouette / Guests (Bottom Left & Right) -->
+    <!-- Left Guest -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,60a4,4 0 1,0 0,-8a4,4 0 0,0 0,8zm-7,16c0,-4.5 7,-7 7,-7s7,2.5 7,7v2H28v-2z" />
+    <!-- Right Guest -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M73,60a4,4 0 1,0 0,-8a4,4 0 0,0 0,8zm-7,16c0,-4.5 7,-7 7,-7s7,2.5 7,7v2H66v-2z" />
+
+    <!-- Checkmark Badge (Bottom Center) -->
+    <path
+        android:fillColor="#22C55E"
+        android:pathData="M54,80 A6,6 0 1,1 53.9,80 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51.5,80l1.8,1.8l3.7,-3.7"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
 </vector>

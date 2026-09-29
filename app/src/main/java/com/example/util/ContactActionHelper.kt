@@ -29,26 +29,73 @@ object ContactActionHelper {
 
     fun sendWhatsAppWithFile(context: Context, phoneNumber: String, message: String, fileUri: Uri?, mimeType: String = "*/*") {
         try {
-            if (fileUri != null) {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = mimeType
-                    putExtra(Intent.EXTRA_STREAM, fileUri)
-                    putExtra(Intent.EXTRA_TEXT, message)
-                    setPackage("com.whatsapp")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val cleanNumber = phoneNumber.replace(Regex("[^0-9]"), "")
+
+            // Copy message to Clipboard so user can easily paste if WhatsApp caption does not auto-fill
+            if (message.isNotBlank()) {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                if (clipboard != null) {
+                    val clip = android.content.ClipData.newPlainText("Invitation Message", message)
+                    clipboard.setPrimaryClip(clip)
                 }
-                try {
-                    context.startActivity(intent)
+            }
+
+            if (fileUri != null) {
+                // Resolve exact MIME type
+                val resolvedMimeType = try {
+                    context.contentResolver.getType(fileUri) ?: mimeType
                 } catch (e: Exception) {
-                    intent.setPackage(null)
-                    context.startActivity(intent)
+                    mimeType
+                }
+                val finalMime = if (resolvedMimeType.isBlank() || resolvedMimeType == "*/*") {
+                    if (mimeType.contains("pdf")) "application/pdf" else "image/*"
+                } else {
+                    resolvedMimeType
+                }
+
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = finalMime
+                    putExtra(Intent.EXTRA_STREAM, fileUri)
+                    if (message.isNotBlank()) {
+                        putExtra(Intent.EXTRA_TEXT, message)
+                    }
+                    if (cleanNumber.isNotEmpty()) {
+                        putExtra("jid", "$cleanNumber@s.whatsapp.net")
+                    }
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                var launched = false
+                try {
+                    val waIntent = Intent(intent).apply { setPackage("com.whatsapp") }
+                    context.startActivity(waIntent)
+                    launched = true
+                    Toast.makeText(context, "Opening WhatsApp... (Caption copied to clipboard)", Toast.LENGTH_SHORT).show()
+                } catch (e1: Exception) {
+                    try {
+                        val w4bIntent = Intent(intent).apply { setPackage("com.whatsapp.w4b") }
+                        context.startActivity(w4bIntent)
+                        launched = true
+                        Toast.makeText(context, "Opening WhatsApp Business...", Toast.LENGTH_SHORT).show()
+                    } catch (e2: Exception) {
+                        launched = false
+                    }
+                }
+
+                if (!launched) {
+                    val chooserIntent = Intent.createChooser(intent, "Share Attachment & Message").apply {
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(chooserIntent)
+                    Toast.makeText(context, "Message copied! Select WhatsApp to send.", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 openWhatsApp(context, phoneNumber, message)
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Unable to send message with file", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Unable to send via WhatsApp: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
