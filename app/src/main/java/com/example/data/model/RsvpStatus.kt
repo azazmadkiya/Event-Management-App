@@ -19,6 +19,7 @@ enum class RsvpStatus(
     val containerColor: Color
 ) {
     ATTENDING("Attending (OK)", "OK", StatusAttending, StatusAttendingContainer),
+    INVITED("Invited", "Invited", Color(0xFF0288D1), Color(0xFFE1F5FE)),
     PENDING("Pending", "Pending", StatusPending, StatusPendingContainer),
     DECLINED("Declined", "Declined", StatusDeclined, StatusDeclinedContainer),
     NOT_INVITED("Not Invited (Draft)", "Draft", StatusDraft, StatusDraftContainer),

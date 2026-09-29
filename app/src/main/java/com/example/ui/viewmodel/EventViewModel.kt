@@ -126,6 +126,7 @@ class EventViewModel(application: Application) : AndroidViewModel(application) {
                 val matchesTab = when (tab) {
                     "ALL" -> true
                     "ATTENDING" -> guest.rsvpStatus == RsvpStatus.ATTENDING.name
+                    "INVITED" -> guest.rsvpStatus == RsvpStatus.INVITED.name
                     "PENDING" -> guest.rsvpStatus == RsvpStatus.PENDING.name
                     "DECLINED" -> guest.rsvpStatus == RsvpStatus.DECLINED.name
                     "NOT_INVITED" -> guest.rsvpStatus == RsvpStatus.NOT_INVITED.name

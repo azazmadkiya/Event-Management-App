@@ -70,6 +70,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -164,6 +165,7 @@ fun GuestListScreen(
     val tabs = listOf(
         "ALL" to "All (${allRawGuests.size})",
         "ATTENDING" to "Attending OK (${allRawGuests.count { it.rsvpStatus == RsvpStatus.ATTENDING.name }})",
+        "INVITED" to "Invited (${allRawGuests.count { it.rsvpStatus == RsvpStatus.INVITED.name }})",
         "PENDING" to "Pending (${allRawGuests.count { it.rsvpStatus == RsvpStatus.PENDING.name }})",
         "DECLINED" to "Declined (${allRawGuests.count { it.rsvpStatus == RsvpStatus.DECLINED.name }})",
         "NOT_INVITED" to "Draft (${allRawGuests.count { it.rsvpStatus == RsvpStatus.NOT_INVITED.name }})",
@@ -787,6 +789,31 @@ fun GuestItemCard(
                                 }
                             )
                         }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Chat,
+                                        contentDescription = null,
+                                        tint = Color(0xFF25D366),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Send WhatsApp",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF075E54)
+                                    )
+                                }
+                            },
+                            onClick = {
+                                statusDropdownExpanded = false
+                                showWhatsAppDialog = true
+                            }
+                        )
                     }
                 }
 
