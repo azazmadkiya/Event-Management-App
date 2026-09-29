@@ -99,6 +99,76 @@ object ContactActionHelper {
         }
     }
 
+    fun sendWhatsAppWithMultipleFiles(
+        context: Context,
+        phoneNumber: String,
+        message: String,
+        fileUris: List<Uri>
+    ) {
+        try {
+            val cleanNumber = phoneNumber.replace(Regex("[^0-9]"), "")
+
+            if (message.isNotBlank()) {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                if (clipboard != null) {
+                    val clip = android.content.ClipData.newPlainText("Invitation Message", message)
+                    clipboard.setPrimaryClip(clip)
+                }
+            }
+
+            if (fileUris.isNotEmpty()) {
+                if (fileUris.size == 1) {
+                    sendWhatsAppWithFile(context, phoneNumber, message, fileUris.first())
+                    return
+                }
+
+                val uriArrayList = ArrayList<Uri>(fileUris)
+                val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                    type = "*/*"
+                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uriArrayList)
+                    if (message.isNotBlank()) {
+                        putExtra(Intent.EXTRA_TEXT, message)
+                    }
+                    if (cleanNumber.isNotEmpty()) {
+                        putExtra("jid", "$cleanNumber@s.whatsapp.net")
+                    }
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                var launched = false
+                try {
+                    val waIntent = Intent(intent).apply { setPackage("com.whatsapp") }
+                    context.startActivity(waIntent)
+                    launched = true
+                    Toast.makeText(context, "Opening WhatsApp with ${fileUris.size} attachments...", Toast.LENGTH_SHORT).show()
+                } catch (e1: Exception) {
+                    try {
+                        val w4bIntent = Intent(intent).apply { setPackage("com.whatsapp.w4b") }
+                        context.startActivity(w4bIntent)
+                        launched = true
+                        Toast.makeText(context, "Opening WhatsApp Business with ${fileUris.size} attachments...", Toast.LENGTH_SHORT).show()
+                    } catch (e2: Exception) {
+                        launched = false
+                    }
+                }
+
+                if (!launched) {
+                    val chooserIntent = Intent.createChooser(intent, "Share ${fileUris.size} Attachments & Message").apply {
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(chooserIntent)
+                    Toast.makeText(context, "Message copied to clipboard!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                openWhatsApp(context, phoneNumber, message)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Unable to send multiple attachments via WhatsApp: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun makePhoneCall(context: Context, phoneNumber: String) {
         if (phoneNumber.isBlank()) {
             Toast.makeText(context, "No phone number available", Toast.LENGTH_SHORT).show()

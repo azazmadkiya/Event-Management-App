@@ -139,17 +139,16 @@ fun GuestDetailDialog(
     var customMessage by remember {
         mutableStateOf(InvitationTemplates.templates[0].buildMessage(guest, event))
     }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
-    var fileMimeType by remember { mutableStateOf("*/*") }
-    var fileName by remember { mutableStateOf("") }
+    var savedAttachments by remember {
+        mutableStateOf(com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId))
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "image/*"
-            fileName = "Image Attachment"
+            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, guest.eventId, uri)
+            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
         }
     }
 
@@ -157,9 +156,8 @@ fun GuestDetailDialog(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "application/pdf"
-            fileName = "PDF Document Attachment"
+            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, guest.eventId, uri)
+            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
         }
     }
 
@@ -339,7 +337,7 @@ fun GuestDetailDialog(
 
                 // File Attachment Section
                 Text(
-                    text = "Attach Invitation File / Schedule (Optional)",
+                    text = "Saved Attachments (Auto-Saved for Event)",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -356,7 +354,7 @@ fun GuestDetailDialog(
                     ) {
                         Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Image", fontSize = 12.sp)
+                        Text("Add Image", fontSize = 12.sp)
                     }
 
                     OutlinedButton(
@@ -367,33 +365,48 @@ fun GuestDetailDialog(
                     ) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("PDF", fontSize = 12.sp)
+                        Text("Add PDF", fontSize = 12.sp)
                     }
                 }
 
-                if (selectedFileUri != null) {
-                    Surface(
-                        color = Color(0xFF25D366).copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Attached: $fileName",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF128C7E),
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = { selectedFileUri = null; fileName = "" },
-                                modifier = Modifier.size(20.dp)
+                if (savedAttachments.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        savedAttachments.forEach { att ->
+                            Surface(
+                                color = Color(0xFF25D366).copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(Icons.Default.Clear, contentDescription = "Remove file", tint = Color(0xFF128C7E), modifier = Modifier.size(16.dp))
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Icon(
+                                        if (att.mimeType.contains("pdf")) Icons.Default.PictureAsPdf else Icons.Default.Image,
+                                        contentDescription = null,
+                                        tint = Color(0xFF128C7E),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = att.fileName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF128C7E),
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            com.example.util.SavedAttachmentHelper.deleteSavedAttachment(context, att.id)
+                                            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
+                                        },
+                                        modifier = Modifier.size(20.dp)
+                                    ) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Remove file", tint = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                                    }
+                                }
                             }
                         }
                     }
@@ -404,12 +417,12 @@ fun GuestDetailDialog(
             Button(
                 onClick = {
                     val targetNumber = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
-                    ContactActionHelper.sendWhatsAppWithFile(
+                    val uris = savedAttachments.map { Uri.parse(it.uriString) }
+                    com.example.util.ContactActionHelper.sendWhatsAppWithMultipleFiles(
                         context = context,
                         phoneNumber = targetNumber,
                         message = customMessage,
-                        fileUri = selectedFileUri,
-                        mimeType = fileMimeType
+                        fileUris = uris
                     )
                     onDismiss()
                 },

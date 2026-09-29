@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -501,6 +502,7 @@ fun GuestListScreen(
         BroadcastMessageDialog(
             guests = allRawGuests,
             selectedGuestIds = selectedGuestIds.value,
+            eventId = currentEvent?.id ?: "",
             eventTitle = currentEvent?.title ?: "Event",
             onDismiss = { showBroadcastDialog = false }
         )
@@ -1144,6 +1146,7 @@ fun SendWhatsAppDialog(
 fun BroadcastMessageDialog(
     guests: List<GuestEntity>,
     selectedGuestIds: Set<String>,
+    eventId: String,
     eventTitle: String,
     onDismiss: () -> Unit
 ) {
@@ -1151,18 +1154,18 @@ fun BroadcastMessageDialog(
     var message by remember {
         mutableStateOf("Hi [Guest Name], you are cordially invited to $eventTitle! Please confirm your attendance.")
     }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
-    var fileMimeType by remember { mutableStateOf("*/*") }
-    var fileName by remember { mutableStateOf("") }
     var targetGroup by remember { mutableStateOf("ATTENDING") }
+    var savedAttachments by remember {
+        mutableStateOf(com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId))
+    }
+    var activeBatchRecipients by remember { mutableStateOf<List<GuestEntity>?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "image/*"
-            fileName = "Selected Image File"
+            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, eventId, uri)
+            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId)
         }
     }
 
@@ -1170,15 +1173,27 @@ fun BroadcastMessageDialog(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "application/pdf"
-            fileName = "Selected PDF Document"
+            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, eventId, uri)
+            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId)
         }
+    }
+
+    if (activeBatchRecipients != null) {
+        BulkWhatsAppQueueDialog(
+            recipients = activeBatchRecipients!!,
+            messageTemplate = message,
+            eventId = eventId,
+            onDismiss = {
+                activeBatchRecipients = null
+                onDismiss()
+            }
+        )
+        return
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (selectedGuestIds.isNotEmpty()) "Send WhatsApp to ${selectedGuestIds.size} Selected" else "Upload File & Message to Guests") },
+        title = { Text(if (selectedGuestIds.isNotEmpty()) "Send WhatsApp to ${selectedGuestIds.size} Selected" else "Upload & Send Message to Guests") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -1186,9 +1201,9 @@ fun BroadcastMessageDialog(
             ) {
                 Text(
                     text = if (selectedGuestIds.isNotEmpty())
-                        "Sending message & attached file to ${selectedGuestIds.size} selected guest(s) with 'Hi [Guest Name]' greeting."
+                        "Sending message & saved attached files to ${selectedGuestIds.size} selected guest(s) with 'Hi [Guest Name]' greeting."
                     else
-                        "Send custom message with 'Hi [Guest Name]' greeting and attached file via WhatsApp.",
+                        "Send custom message with 'Hi [Guest Name]' greeting and saved files via WhatsApp.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1223,7 +1238,7 @@ fun BroadcastMessageDialog(
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Upload File / Attachment:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Text("Saved Attachments (Auto-Saved for Event):", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1237,7 +1252,7 @@ fun BroadcastMessageDialog(
                     ) {
                         Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Upload Image")
+                        Text("Add Image")
                     }
 
                     OutlinedButton(
@@ -1248,29 +1263,48 @@ fun BroadcastMessageDialog(
                     ) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Upload PDF")
+                        Text("Add PDF")
                     }
                 }
 
-                if (selectedFileUri != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Uploaded: $fileName",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = { selectedFileUri = null; fileName = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Remove file", modifier = Modifier.size(16.dp))
+                if (savedAttachments.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        savedAttachments.forEach { att ->
+                            Surface(
+                                color = Color(0xFF25D366).copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Icon(
+                                        if (att.mimeType.contains("pdf")) Icons.Default.PictureAsPdf else Icons.Default.Image,
+                                        contentDescription = null,
+                                        tint = Color(0xFF128C7E),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = att.fileName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF128C7E),
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            com.example.util.SavedAttachmentHelper.deleteSavedAttachment(context, att.id)
+                                            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId)
+                                        },
+                                        modifier = Modifier.size(20.dp)
+                                    ) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Remove file", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                                    }
+                                }
                             }
                         }
                     }
@@ -1291,25 +1325,159 @@ fun BroadcastMessageDialog(
                     }
                     val validRecipients = recipients.filter { it.whatsAppNumber.isNotBlank() || it.phoneNumber.isNotBlank() }
                     if (validRecipients.isNotEmpty()) {
-                        val guest = validRecipients.first()
-                        val targetNumber = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
-                        val personalizedMsg = message.replace("[Guest Name]", guest.name)
-                        ContactActionHelper.sendWhatsAppWithFile(context, targetNumber, personalizedMsg, selectedFileUri, fileMimeType)
+                        activeBatchRecipients = validRecipients
                     } else {
-                        android.widget.Toast.makeText(context, "No valid phone/WhatsApp number found in selection/group", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, "No valid phone/WhatsApp number found in selection", android.widget.Toast.LENGTH_SHORT).show()
                     }
-                    onDismiss()
                 },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                 modifier = Modifier.testTag("send_broadcast_whatsapp_btn")
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (selectedGuestIds.isNotEmpty()) "Send to Selected (${selectedGuestIds.size})" else "Hi Send To Guest")
+                Text(
+                    text = if (selectedGuestIds.isNotEmpty()) "Send to Selected (${selectedGuestIds.size})" else "Start Bulk WhatsApp Send",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
                 Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun BulkWhatsAppQueueDialog(
+    recipients: List<GuestEntity>,
+    messageTemplate: String,
+    eventId: String,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var currentIndex by remember { mutableStateOf(0) }
+    val currentGuest = recipients.getOrNull(currentIndex)
+    val savedAttachments = remember { com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId) }
+
+    if (currentGuest == null || currentIndex >= recipients.size) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("WhatsApp Batch Complete 🎉") },
+            text = { Text("All ${recipients.size} selected guest invitations have been processed!") },
+            confirmButton = {
+                Button(onClick = onDismiss) {
+                    Text("Done")
+                }
+            }
+        )
+        return
+    }
+
+    val personalizedMessage = messageTemplate
+        .replace("[Guest Name]", currentGuest.name)
+        .replace("{GuestName}", currentGuest.name)
+    val targetPhone = if (currentGuest.whatsAppNumber.isNotBlank()) currentGuest.whatsAppNumber else currentGuest.phoneNumber
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    text = "WhatsApp Dispatch (${currentIndex + 1}/${recipients.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = { (currentIndex + 1).toFloat() / recipients.size.toFloat() },
+                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    color = Color(0xFF25D366),
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "To: ${currentGuest.name}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "📱 Phone: $targetPhone",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Personalized Message:",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = personalizedMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+
+                if (savedAttachments.isNotEmpty()) {
+                    Text(
+                        text = "📎 ${savedAttachments.size} Saved Attachment(s) Included",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF128C7E)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val uris = savedAttachments.map { Uri.parse(it.uriString) }
+                    ContactActionHelper.sendWhatsAppWithMultipleFiles(
+                        context = context,
+                        phoneNumber = targetPhone,
+                        message = personalizedMessage,
+                        fileUris = uris
+                    )
+                    currentIndex++
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+            ) {
+                Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Open WhatsApp for ${currentGuest.name}", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        currentIndex++
+                    }
+                ) {
+                    Text("Skip / Next")
+                }
+                OutlinedButton(onClick = onDismiss) {
+                    Text("Close")
+                }
             }
         }
     )
