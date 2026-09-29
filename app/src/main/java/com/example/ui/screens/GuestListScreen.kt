@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,6 +68,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1471,16 +1473,21 @@ fun BulkWhatsAppQueueDialog(
 ) {
     val context = LocalContext.current
     var currentIndex by remember { mutableStateOf(0) }
-    val currentGuest = recipients.getOrNull(currentIndex)
+    var sentGuestIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val savedAttachments = remember { com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId) }
 
-    if (currentGuest == null || currentIndex >= recipients.size) {
+    val currentGuest = recipients.getOrNull(currentIndex)
+
+    if (currentGuest == null || recipients.isEmpty()) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("WhatsApp Batch Complete 🎉") },
+            title = { Text("WhatsApp Dispatch Complete 🎉") },
             text = { Text("All ${recipients.size} selected guest invitations have been processed!") },
             confirmButton = {
-                Button(onClick = onDismiss) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                ) {
                     Text("Done")
                 }
             }
@@ -1488,21 +1495,44 @@ fun BulkWhatsAppQueueDialog(
         return
     }
 
-    val personalizedMessage = messageTemplate
-        .replace("[Guest Name]", currentGuest.name)
-        .replace("{GuestName}", currentGuest.name)
+    var customMessage by remember(currentIndex) {
+        mutableStateOf(
+            messageTemplate
+                .replace("[Guest Name]", currentGuest.name)
+                .replace("{GuestName}", currentGuest.name)
+        )
+    }
+
     val targetPhone = if (currentGuest.whatsAppNumber.isNotBlank()) currentGuest.whatsAppNumber else currentGuest.phoneNumber
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
-                Text(
-                    text = "WhatsApp Dispatch (${currentIndex + 1}/${recipients.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "1-By-1 WhatsApp (${currentIndex + 1}/${recipients.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        color = Color(0xFF25D366).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "${sentGuestIds.size}/${recipients.size} Sent",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF075E54),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
                 androidx.compose.material3.LinearProgressIndicator(
                     progress = { (currentIndex + 1).toFloat() / recipients.size.toFloat() },
                     modifier = Modifier.fillMaxWidth().height(6.dp),
@@ -1511,51 +1541,113 @@ fun BulkWhatsAppQueueDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Interactive Guest Selector Chips Row
+                Text("Tap Guest to Select:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    itemsIndexed(recipients) { idx, g ->
+                        val isSent = sentGuestIds.contains(g.id)
+                        val isSelected = idx == currentIndex
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { currentIndex = idx },
+                            label = {
+                                Text(
+                                    text = "${idx + 1}. ${g.name} ${if (isSent) "✓" else ""}",
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF25D366).copy(alpha = 0.25f),
+                                selectedLabelColor = Color(0xFF075E54)
+                            )
+                        )
+                    }
+                }
+
+                // Invitee Details Card
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "To: ${currentGuest.name}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = "📱 Phone: $targetPhone",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Guest ${currentIndex + 1}: ${currentGuest.name}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "📱 WhatsApp: $targetPhone",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        if (sentGuestIds.contains(currentGuest.id)) {
+                            Surface(
+                                color = Color(0xFF25D366),
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Sent",
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(6.dp).size(16.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
+                // Editable Message
                 Text(
-                    text = "Personalized Message:",
+                    text = "Message for ${currentGuest.name}:",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = personalizedMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(10.dp)
-                    )
-                }
+                OutlinedTextField(
+                    value = customMessage,
+                    onValueChange = { customMessage = it },
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth().testTag("bulk_queue_msg_input")
+                )
 
+                // Saved Attachments Indicator
                 if (savedAttachments.isNotEmpty()) {
-                    Text(
-                        text = "📎 ${savedAttachments.size} Saved Attachment(s) Included",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF128C7E)
-                    )
+                    Surface(
+                        color = Color(0xFF25D366).copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.AttachFile,
+                                contentDescription = null,
+                                tint = Color(0xFF128C7E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${savedAttachments.size} File(s) Attached Automatically",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF128C7E)
+                            )
+                        }
+                    }
                 }
             }
         },
@@ -1566,28 +1658,54 @@ fun BulkWhatsAppQueueDialog(
                     ContactActionHelper.sendWhatsAppWithMultipleFiles(
                         context = context,
                         phoneNumber = targetPhone,
-                        message = personalizedMessage,
+                        message = customMessage,
                         fileUris = uris
                     )
-                    currentIndex++
+                    sentGuestIds = sentGuestIds + currentGuest.id
+                    if (currentIndex < recipients.size - 1) {
+                        currentIndex++
+                    } else {
+                        android.widget.Toast.makeText(context, "All guest messages sent!", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                modifier = Modifier.fillMaxWidth().testTag("send_individual_queue_btn")
             ) {
                 Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Open WhatsApp for ${currentGuest.name}", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Send to ${currentGuest.name} on WhatsApp",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        currentIndex++
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { if (currentIndex > 0) currentIndex-- },
+                        enabled = currentIndex > 0,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("◄ Back")
                     }
-                ) {
-                    Text("Skip / Next")
+                    OutlinedButton(
+                        onClick = { if (currentIndex < recipients.size - 1) currentIndex++ },
+                        enabled = currentIndex < recipients.size - 1,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("Next ►")
+                    }
                 }
-                OutlinedButton(onClick = onDismiss) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
                     Text("Close")
                 }
             }
