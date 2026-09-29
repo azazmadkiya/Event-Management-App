@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -177,53 +178,56 @@ fun GuestListScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Backup & Restore & Contacts & Broadcast Action Buttons Row
+            // Backup & Restore & Contacts & Broadcast Action Buttons Row (Smooth Scroll)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
                     onClick = { backupLauncher.launch("guest_backup_${System.currentTimeMillis()}.json") },
-                    modifier = Modifier.weight(1f).testTag("backup_guests_btn"),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("backup_guests_btn")
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("Backup", style = MaterialTheme.typography.labelSmall)
+                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Backup", style = MaterialTheme.typography.labelMedium)
                 }
 
                 OutlinedButton(
                     onClick = { restoreLauncher.launch("application/json") },
-                    modifier = Modifier.weight(1f).testTag("restore_guests_btn"),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("restore_guests_btn")
                 ) {
-                    Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("Restore", style = MaterialTheme.typography.labelSmall)
+                    Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Restore", style = MaterialTheme.typography.labelMedium)
                 }
 
                 OutlinedButton(
                     onClick = { showPhoneContactsDialog = true },
-                    modifier = Modifier.weight(1f).testTag("import_phone_contacts_btn"),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("import_phone_contacts_btn")
                 ) {
-                    Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("Contacts", style = MaterialTheme.typography.labelSmall)
+                    Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Contacts", style = MaterialTheme.typography.labelMedium)
                 }
 
                 Button(
                     onClick = { showBroadcastDialog = true },
-                    modifier = Modifier.weight(1f).testTag("broadcast_msg_btn"),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("broadcast_msg_btn")
                 ) {
-                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("Send Msg", style = MaterialTheme.typography.labelSmall)
+                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Send Msg", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
@@ -251,10 +255,12 @@ fun GuestListScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Status Tabs
+            // Status Tabs (Smooth Scrollable Tabs)
             ScrollableTabRow(
                 selectedTabIndex = currentTabIndex,
                 edgePadding = 0.dp,
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("guest_status_tabs")
@@ -267,7 +273,8 @@ fun GuestListScreen(
                             Text(
                                 text = tab.second,
                                 fontWeight = if (currentTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                maxLines = 1
                             )
                         }
                     )
