@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
@@ -76,6 +77,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -902,22 +904,55 @@ fun GuestItemCard(
                         Spacer(modifier = Modifier.weight(1f))
                     }
 
-                    // Quick Action Buttons: WhatsApp, Call, Email
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        // WhatsApp Button
+                    // Quick Action Buttons: WhatsApp File + Message, WhatsApp Chat, Call
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         if (guest.whatsAppNumber.isNotBlank() || guest.phoneNumber.isNotBlank()) {
-                            IconButton(
+                            // Dedicated Individual Send WhatsApp File + Message Button
+                            Surface(
                                 onClick = { showWhatsAppDialog = true },
+                                color = Color(0xFF25D366).copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("whatsapp_file_msg_button_${guest.id}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.AttachFile,
+                                        contentDescription = "Send WhatsApp File & Message",
+                                        tint = Color(0xFF25D366),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "File + Msg",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF075E54),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Quick WhatsApp Chat Button
+                            IconButton(
+                                onClick = {
+                                    val targetNum = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
+                                    ContactActionHelper.openWhatsApp(context, targetNum, "Hi ${guest.name}, you are cordially invited to $eventTitle!")
+                                },
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .background(Color(0xFF25D366).copy(alpha = 0.15f), CircleShape)
-                                    .testTag("whatsapp_button_${guest.id}")
+                                    .testTag("whatsapp_chat_button_${guest.id}")
                             ) {
                                 Icon(
                                     Icons.Default.Chat,
-                                    contentDescription = "Send WhatsApp Message & File",
+                                    contentDescription = "Quick WhatsApp Chat",
                                     tint = Color(0xFF25D366),
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
@@ -926,6 +961,7 @@ fun GuestItemCard(
                             SendWhatsAppDialog(
                                 guest = guest,
                                 eventTitle = eventTitle,
+                                eventId = guest.eventId,
                                 onDismiss = { showWhatsAppDialog = false }
                             )
                         }
@@ -1012,23 +1048,33 @@ fun GuestItemCard(
 fun SendWhatsAppDialog(
     guest: GuestEntity,
     eventTitle: String,
+    eventId: String = guest.eventId,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     var message by remember {
-        mutableStateOf("Hello ${guest.name}! You are cordially invited to $eventTitle. Please let us know your RSVP status.")
+        mutableStateOf("Hi ${guest.name}, you are cordially invited to $eventTitle! Please confirm your attendance.")
     }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
-    var fileMimeType by remember { mutableStateOf("*/*") }
-    var fileName by remember { mutableStateOf("") }
+
+    var selectedFileUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    // Auto-load saved event attachments
+    LaunchedEffect(eventId) {
+        val saved = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId)
+        val savedUris = saved.map { Uri.parse(it.uriString) }
+        selectedFileUris = savedUris
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "image/*"
-            fileName = "Selected Image File"
+            val savedAtt = com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, eventId, uri)
+            if (savedAtt != null) {
+                selectedFileUris = selectedFileUris + Uri.parse(savedAtt.uriString)
+            } else {
+                selectedFileUris = selectedFileUris + uri
+            }
         }
     }
 
@@ -1036,15 +1082,18 @@ fun SendWhatsAppDialog(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
-            selectedFileUri = uri
-            fileMimeType = "application/pdf"
-            fileName = "Selected PDF Document"
+            val savedAtt = com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, eventId, uri)
+            if (savedAtt != null) {
+                selectedFileUris = selectedFileUris + Uri.parse(savedAtt.uriString)
+            } else {
+                selectedFileUris = selectedFileUris + uri
+            }
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Send WhatsApp Message & File") },
+        title = { Text("Send WhatsApp File & Message") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -1053,20 +1102,47 @@ fun SendWhatsAppDialog(
                 Text(
                     text = "To: ${guest.name} (${if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber})",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
                 )
+
+                // Quick Message Templates
+                Text("Quick Templates:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = { message = "Dear ${guest.name}, we request the pleasure of your company at $eventTitle. Please RSVP at your earliest convenience." },
+                            label = { Text("Formal Invite") }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = { message = "Hey ${guest.name}! Join us for $eventTitle. Can't wait to see you there!" },
+                            label = { Text("Casual Invite") }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = { message = "Hi ${guest.name}, friendly reminder to kindly update your RSVP for $eventTitle." },
+                            label = { Text("RSVP Reminder") }
+                        )
+                    }
+                }
 
                 OutlinedTextField(
                     value = message,
                     onValueChange = { message = it },
-                    label = { Text("Message Box *") },
+                    label = { Text("Personalized Message *") },
                     maxLines = 5,
                     modifier = Modifier.fillMaxWidth().testTag("whatsapp_message_input")
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
-                Text("Attach Files:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Text("Attachments (${selectedFileUris.size}):", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1080,7 +1156,7 @@ fun SendWhatsAppDialog(
                     ) {
                         Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Attach Image")
+                        Text("+ Add Image")
                     }
 
                     OutlinedButton(
@@ -1091,32 +1167,60 @@ fun SendWhatsAppDialog(
                     ) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Attach PDF")
+                        Text("+ Add PDF")
                     }
                 }
 
-                if (selectedFileUri != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Attached: $fileName",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = { selectedFileUri = null; fileName = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Remove file", modifier = Modifier.size(16.dp))
+                if (selectedFileUris.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        selectedFileUris.forEachIndexed { idx, uri ->
+                            val isPdf = uri.toString().endsWith(".pdf", ignoreCase = true)
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Image,
+                                            contentDescription = null,
+                                            tint = if (isPdf) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = uri.lastPathSegment ?: "Attachment ${idx + 1}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            selectedFileUris = selectedFileUris.filter { it != uri }
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Remove file", modifier = Modifier.size(14.dp))
+                                    }
+                                }
                             }
                         }
                     }
+                } else {
+                    Text(
+                        text = "No files attached. Tap buttons above to attach flyers or PDFs.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                 }
             }
         },
@@ -1124,9 +1228,10 @@ fun SendWhatsAppDialog(
             Button(
                 onClick = {
                     val targetNumber = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
-                    ContactActionHelper.sendWhatsAppWithFile(context, targetNumber, message, selectedFileUri, fileMimeType)
+                    ContactActionHelper.sendWhatsAppWithMultipleFiles(context, targetNumber, message, selectedFileUris)
                     onDismiss()
                 },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                 modifier = Modifier.testTag("send_whatsapp_with_file_btn")
             ) {
                 Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
