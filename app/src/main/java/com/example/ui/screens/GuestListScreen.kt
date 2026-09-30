@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -177,320 +178,318 @@ fun GuestListScreen(
 
     val currentTabIndex = tabs.indexOfFirst { it.first == selectedRsvpTab }.coerceAtLeast(0)
 
+    val listState = rememberLazyListState()
+
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .testTag("guest_lazy_column"),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Action Buttons Row (Smooth Scroll)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = { showUploadsDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("upload_files_top_btn")
+            // Action Buttons Row (Uploads, Backup, Restore, Contacts, Send Msg)
+            item(key = "top_action_buttons") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Uploads", style = MaterialTheme.typography.labelMedium)
-                }
+                    OutlinedButton(
+                        onClick = { showUploadsDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("upload_files_top_btn")
+                    ) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Uploads", style = MaterialTheme.typography.labelMedium)
+                    }
 
-                OutlinedButton(
-                    onClick = { backupLauncher.launch("guest_backup_${System.currentTimeMillis()}.json") },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("backup_guests_btn")
-                ) {
-                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Backup", style = MaterialTheme.typography.labelMedium)
-                }
+                    OutlinedButton(
+                        onClick = { backupLauncher.launch("guest_backup_${System.currentTimeMillis()}.json") },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("backup_guests_btn")
+                    ) {
+                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Backup", style = MaterialTheme.typography.labelMedium)
+                    }
 
-                OutlinedButton(
-                    onClick = { restoreLauncher.launch("application/json") },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("restore_guests_btn")
-                ) {
-                    Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Restore", style = MaterialTheme.typography.labelMedium)
-                }
+                    OutlinedButton(
+                        onClick = { restoreLauncher.launch("application/json") },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("restore_guests_btn")
+                    ) {
+                        Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Restore", style = MaterialTheme.typography.labelMedium)
+                    }
 
-                OutlinedButton(
-                    onClick = { showPhoneContactsDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("import_phone_contacts_btn")
-                ) {
-                    Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Contacts", style = MaterialTheme.typography.labelMedium)
-                }
+                    OutlinedButton(
+                        onClick = { showPhoneContactsDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("import_phone_contacts_btn")
+                    ) {
+                        Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Contacts", style = MaterialTheme.typography.labelMedium)
+                    }
 
-                Button(
-                    onClick = { showBroadcastDialog = true },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("broadcast_msg_btn")
-                ) {
-                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Send Msg", style = MaterialTheme.typography.labelMedium)
+                    Button(
+                        onClick = { showBroadcastDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("broadcast_msg_btn")
+                    ) {
+                        Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Send Msg", style = MaterialTheme.typography.labelMedium)
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                placeholder = { Text("Search by name, phone, email...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+            item(key = "guest_search_bar_item") {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Search by name, phone, email...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
                         }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("guest_search_bar")
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("guest_search_bar")
+                )
+            }
 
             // Status Tabs (Smooth Scrollable Tabs)
-            ScrollableTabRow(
-                selectedTabIndex = currentTabIndex,
-                edgePadding = 0.dp,
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("guest_status_tabs")
-            ) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = currentTabIndex == index,
-                        onClick = { onRsvpTabChange(tab.first) },
-                        text = {
-                            Text(
-                                text = tab.second,
-                                fontWeight = if (currentTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp,
-                                maxLines = 1
-                            )
-                        }
-                    )
+            item(key = "guest_status_tabs_item") {
+                ScrollableTabRow(
+                    selectedTabIndex = currentTabIndex,
+                    edgePadding = 0.dp,
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("guest_status_tabs")
+                ) {
+                    tabs.forEachIndexed { index, tab ->
+                        Tab(
+                            selected = currentTabIndex == index,
+                            onClick = { onRsvpTabChange(tab.first) },
+                            text = {
+                                Text(
+                                    text = tab.second,
+                                    fontWeight = if (currentTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 13.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Invitation Option Filter Chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                item {
+            item(key = "guest_invite_channel_chips") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     FilterChip(
                         selected = selectedInviteChannelFilter == null,
                         onClick = { onInviteChannelFilterChange(null) },
                         label = { Text("All Invites") },
                         shape = RoundedCornerShape(10.dp)
                     )
-                }
-                items(InviteChannel.entries.toList()) { channel ->
-                    FilterChip(
-                        selected = selectedInviteChannelFilter == channel.name,
-                        onClick = {
-                            if (selectedInviteChannelFilter == channel.name) onInviteChannelFilterChange(null)
-                            else onInviteChannelFilterChange(channel.name)
-                        },
-                        label = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (channel == InviteChannel.WHATSAPP_ONLY) {
-                                    Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                } else {
-                                    Icon(Icons.Default.Send, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
+                    InviteChannel.entries.forEach { channel ->
+                        FilterChip(
+                            selected = selectedInviteChannelFilter == channel.name,
+                            onClick = {
+                                if (selectedInviteChannelFilter == channel.name) onInviteChannelFilterChange(null)
+                                else onInviteChannelFilterChange(channel.name)
+                            },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (channel == InviteChannel.WHATSAPP_ONLY) {
+                                        Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    } else {
+                                        Icon(Icons.Default.Send, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    Text(channel.displayName)
                                 }
-                                Text(channel.displayName)
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    )
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
                 }
             }
 
             // Security Lock Banner if locked
             if (isSecurityLocked) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onUnlockRequest() }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                item(key = "security_locked_banner") {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onUnlockRequest() }
                     ) {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Guest Contact Data is Protected",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Text(
-                                text = "Tap here to authenticate with Biometrics or PIN to view phone numbers & addresses.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Guest Count & Select All Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = selectedGuestIds.value.size == guests.size && guests.isNotEmpty(),
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                selectedGuestIds.value = guests.map { it.id }.toSet()
-                            } else {
-                                selectedGuestIds.value = emptySet()
-                            }
-                        },
-                        modifier = Modifier.testTag("select_all_guests_checkbox")
-                    )
-                    Text(
-                        text = "Select All (${selectedGuestIds.value.size}/${guests.size})",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (selectedGuestIds.value.isNotEmpty()) {
-                    Button(
-                        onClick = { showBroadcastDialog = true },
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.testTag("whatsapp_selected_btn")
-                    ) {
-                        Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("WhatsApp (${selectedGuestIds.value.size})", style = MaterialTheme.typography.labelMedium)
-                    }
-                } else if (selectedRsvpTab == "CHECKLIST") {
-                    Text(
-                        text = "Day-of Arrival Checklist",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Guest List
-            if (guests.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = CircleShape,
-                            modifier = Modifier.size(64.dp)
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(32.dp)
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Guest Contact Data is Protected",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Text(
+                                    text = "Tap here to authenticate with Biometrics or PIN to view phone numbers & addresses.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "No invitees found",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                    }
+                }
+            }
+
+            // Guest Count & Select All Row
+            item(key = "guest_selection_counter_row") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = selectedGuestIds.value.size == guests.size && guests.isNotEmpty(),
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    selectedGuestIds.value = guests.map { it.id }.toSet()
+                                } else {
+                                    selectedGuestIds.value = emptySet()
+                                }
+                            },
+                            modifier = Modifier.testTag("select_all_guests_checkbox")
                         )
                         Text(
-                            text = if (searchQuery.isNotEmpty()) "Try a different search term" else "Tap '+' below to add your first guest",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "Select All (${selectedGuestIds.value.size}/${guests.size})",
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .testTag("guest_lazy_column"),
-                    contentPadding = PaddingValues(bottom = 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(guests, key = { it.id }) { guest ->
-                        GuestItemCard(
-                            guest = guest,
-                            isSecurityLocked = isSecurityLocked,
-                            isChecklistMode = selectedRsvpTab == "CHECKLIST",
-                            onCardClick = { guestForDetailView = guest },
-                            onToggleCheckIn = { onToggleCheckIn(guest) },
-                            onEditClick = { onEditGuestClick(guest) },
-                            onDeleteClick = { guestToDelete = guest },
-                            onStatusChange = { newStatus -> onUpdateRsvpStatus(guest.id, newStatus) },
-                            onUpdateInviteChannel = { channel -> onUpdateInviteChannel(guest.id, channel) },
-                            eventTitle = currentEvent?.title ?: "Event",
-                            isSelected = selectedGuestIds.value.contains(guest.id),
-                            onSelectedChange = { selected ->
-                                val current = selectedGuestIds.value.toMutableSet()
-                                if (selected) current.add(guest.id) else current.remove(guest.id)
-                                selectedGuestIds.value = current
-                            }
+
+                    if (selectedGuestIds.value.isNotEmpty()) {
+                        Button(
+                            onClick = { showBroadcastDialog = true },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("whatsapp_selected_btn")
+                        ) {
+                            Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("WhatsApp (${selectedGuestIds.value.size})", style = MaterialTheme.typography.labelMedium)
+                        }
+                    } else if (selectedRsvpTab == "CHECKLIST") {
+                        Text(
+                            text = "Day-of Arrival Checklist",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
+                }
+            }
+
+            // Guest List or Empty State
+            if (guests.isEmpty()) {
+                item(key = "empty_guests_item") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = CircleShape,
+                                modifier = Modifier.size(64.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No invitees found",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (searchQuery.isNotEmpty()) "Try a different search term" else "Tap '+' below to add your first guest",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(items = guests, key = { it.id }) { guest ->
+                    GuestItemCard(
+                        guest = guest,
+                        isSecurityLocked = isSecurityLocked,
+                        isChecklistMode = selectedRsvpTab == "CHECKLIST",
+                        onCardClick = { guestForDetailView = guest },
+                        onToggleCheckIn = { onToggleCheckIn(guest) },
+                        onEditClick = { onEditGuestClick(guest) },
+                        onDeleteClick = { guestToDelete = guest },
+                        onStatusChange = { newStatus -> onUpdateRsvpStatus(guest.id, newStatus) },
+                        onUpdateInviteChannel = { channel -> onUpdateInviteChannel(guest.id, channel) },
+                        eventTitle = currentEvent?.title ?: "Event",
+                        isSelected = selectedGuestIds.value.contains(guest.id),
+                        onSelectedChange = { selected ->
+                            val current = selectedGuestIds.value.toMutableSet()
+                            if (selected) current.add(guest.id) else current.remove(guest.id)
+                            selectedGuestIds.value = current
+                        }
+                    )
                 }
             }
         }
