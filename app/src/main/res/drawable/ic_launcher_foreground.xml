@@ -5,53 +5,270 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Central Circle Backing -->
+    <!-- 1. Central Teal Circle Container with Navy Outline -->
     <path
-        android:fillColor="#0D9488"
-        android:pathData="M54,24 A30,30 0 1,1 53.9,24 Z" />
+        android:fillColor="#2DD4BF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="2"
+        android:pathData="M54,28 A26,26 0 1,1 53.9,28 Z" />
 
-    <!-- Envelope Icon (Top) -->
+    <!-- 2. Confetti Decorations -->
+    <!-- Yellow Confetti -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M39,36 L42,34 L43,36 L40,38 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M68,36 L71,34 L72,36 L69,38 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M33,48 L35,47 L36,49 L34,50 Z" />
+    <!-- Orange Confetti -->
+    <path
+        android:fillColor="#F97316"
+        android:pathData="M73,46 L76,48 L75,50 L72,48 Z" />
+    <path
+        android:fillColor="#F97316"
+        android:pathData="M37,42 A1.5,1.5 0 1,1 36.9,42 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M71,43 A1.5,1.5 0 1,1 70.9,43 Z" />
+
+    <!-- 3. Left Guest (Dad/Friend waving) -->
+    <!-- Waving Left Arm -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M38,32h32c2.2,0 4,1.8 4,4v20c0,2.2 -1.8,4 -4,4H38c-2.2,0 -4,-1.8 -4,-4V36c0,-2.2 1.8,-4 4,-4z" />
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,56 L27,47 L25,48 L31,58 Z" />
+    <!-- Left Hand -->
+    <path
+        android:fillColor="#FED7AA"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M25.5,46.5 A2,2 0 1,1 25.4,46.5 Z" />
+    <!-- Left Body (White Shirt) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M32,56 C32,54 42,54 42,56 L43,65 L31,65 Z" />
+    <!-- Left Head -->
+    <path
+        android:fillColor="#FED7AA"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M37,51 A4.5,4.5 0 1,1 36.9,51 Z" />
+    <!-- Left Hair (Brown) -->
+    <path
+        android:fillColor="#78350F"
+        android:pathData="M32.8,50 C32.8,47 35,46.5 37,46.5 C39.5,46.5 41.5,47.5 41.5,50 C40.5,49 39,48.5 37,48.5 C35,48.5 33.5,49.2 32.8,50 Z" />
+    <!-- Left Eyes & Smile -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M35.5,50.5 A0.6,0.6 0 1,1 35.4,50.5 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M38.5,50.5 A0.6,0.6 0 1,1 38.4,50.5 Z" />
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:pathData="M35.5,52.5 Q37,54 38.5,52.5" />
+
+    <!-- 4. Right Guest (Mom/Friend waving) -->
+    <!-- Waving Right Arm -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M74,56 L81,47 L83,48 L77,58 Z" />
+    <!-- Right Hand -->
+    <path
+        android:fillColor="#D97706"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M82.5,46.5 A2,2 0 1,1 82.4,46.5 Z" />
+    <!-- Right Body (White Shirt) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M66,56 C66,54 76,54 76,56 L77,65 L65,65 Z" />
+    <!-- Right Head -->
+    <path
+        android:fillColor="#FDBA74"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M71,51 A4.5,4.5 0 1,1 70.9,51 Z" />
+    <!-- Right Hair (Dark Wavy) -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M66,52 C66,47 68,46 71,46 C74,46 76,47 76,52 C75.5,50 73.5,48.5 71,48.5 C68.5,48.5 66.5,50 66,52 Z" />
+    <!-- Right Eyes & Smile -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M69.5,50.5 A0.6,0.6 0 1,1 69.4,50.5 Z" />
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M72.5,50.5 A0.6,0.6 0 1,1 72.4,50.5 Z" />
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:pathData="M69.5,52.5 Q71,54 72.5,52.5" />
+
+    <!-- 5. Center Child / Guest -->
+    <path
+        android:fillColor="#2DD4BF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M40,64 C40,61 48,61 48,64 L48,68 L40,68 Z" />
+    <path
+        android:fillColor="#FED7AA"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:pathData="M44,58 A3.2,3.2 0 1,1 43.9,58 Z" />
+    <path
+        android:fillColor="#78350F"
+        android:pathData="M41,57 C41,55 43,54.8 44,54.8 C45.5,54.8 47,55.5 47,57 Z" />
+
+    <!-- 6. Right Child / Guest -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M60,64 C60,61 68,61 68,64 L68,68 L60,68 Z" />
+    <path
+        android:fillColor="#FED7AA"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:pathData="M64,58 A3.2,3.2 0 1,1 63.9,58 Z" />
+
+    <!-- 7. Central Large Location Pin -->
     <path
         android:fillColor="#38BDF8"
-        android:pathData="M38,36l16,11l16,-11v-2H38z" />
+        android:strokeColor="#1E293B"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M54,67 C48,59 43,55 43,49 C43,43 48,38 54,38 C60,38 65,43 65,49 C65,55 60,59 54,67 Z" />
+    <!-- Inner Pin White Hole -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.5"
+        android:pathData="M54,49 A4.5,4.5 0 1,1 53.9,49 Z" />
 
-    <!-- WhatsApp Speech Bubble (Top Left) -->
+    <!-- 8. Top Invitation Envelope with Navy Arrow -->
+    <!-- Envelope Shadow/Base -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M42,26 L66,26 C67.5,26 68,27 68,28.5 L68,39 C68,40.5 67.5,41 66,41 L42,41 C40.5,41 40,40.5 40,39 L40,28.5 C40,27 40.5,26 42,26 Z" />
+    <!-- Envelope Flap Line -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M40,27 L54,35 L68,27" />
+    <!-- Upward Send Arrow (top right of envelope) -->
+    <path
+        android:fillColor="#1E293B"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M60,28 L69,21 M64,20.5 L69,20.5 L69.5,25.5" />
+
+    <!-- 9. WhatsApp Badge (Top Left of Envelope) -->
     <path
         android:fillColor="#25D366"
-        android:pathData="M32,32c-3.3,0 -6,2.7 -6,6c0,1.2 0.8,2.3 1.8,3l-1.8,4.5l4.5,-1.2c0.5,0.3 1,0.7 1.5,0.7c3.3,0 6,-2.7 6,-6s-2.7,-6 -6,-6z" />
-
-    <!-- Location Pin (Center) -->
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M36,30 C32.5,30 30,32.5 30,35.5 C30,36.8 30.5,38 31.2,39 L30.5,42.5 L34,41.8 C34.6,42.2 35.3,42.4 36,42.4 C39.5,42.4 42,39.9 42,36.9 C42,33.9 39.5,30 36,30 Z" />
+    <!-- White "WA" text / badge symbol -->
     <path
-        android:fillColor="#38BDF8"
-        android:pathData="M54,42c-8.3,0 -15,6.7 -15,15c0,10.5 15,25 15,25s15,-14.5 15,-25c0,-8.3 -6.7,-15 -15,-15zm0,20.5c-3,0 -5.5,-2.5 -5.5,-5.5s2.5,-5.5 5.5,-5.5s5.5,2.5 5.5,5.5s-2.5,5.5 -5.5,5.5z" />
-
-    <!-- Inner Pin White Dot -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,53.5 A3.5,3.5 0 1,1 53.9,53.5 Z" />
-
-    <!-- People Silhouette / Guests (Bottom Left & Right) -->
-    <!-- Left Guest -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M35,60a4,4 0 1,0 0,-8a4,4 0 0,0 0,8zm-7,16c0,-4.5 7,-7 7,-7s7,2.5 7,7v2H28v-2z" />
-    <!-- Right Guest -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M73,60a4,4 0 1,0 0,-8a4,4 0 0,0 0,8zm-7,16c0,-4.5 7,-7 7,-7s7,2.5 7,7v2H66v-2z" />
-
-    <!-- Checkmark Badge (Bottom Center) -->
-    <path
-        android:fillColor="#22C55E"
-        android:pathData="M54,80 A6,6 0 1,1 53.9,80 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M51.5,80l1.8,1.8l3.7,-3.7"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round" />
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M33,34.5 L34,38 L35,35.5 L36,38 L37,34.5 M38.5,38 L39.8,34.5 L40.8,38 M38.8,36.8 L40.4,36.8" />
+
+    <!-- 10. Document Attachment Card (Top Right of Envelope) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:pathData="M68,29 L74,29 L77,32 L77,39 C77,40 76.5,40.5 75.5,40.5 L68,40.5 C67,40.5 66.5,40 66.5,39 L66.5,30.5 C66.5,29.5 67,29 68,29 Z" />
+    <!-- Document Fold -->
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:strokeLineJoin="round"
+        android:pathData="M74,29 L74,32 L77,32" />
+    <!-- Document Arrow -->
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:pathData="M69,36 L74,36 M72.5,34.5 L74.5,36 L72.5,37.5" />
+
+    <!-- 11. Bottom Curved Status Pill -->
+    <path
+        android:fillColor="#2563EB"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M33,65 C40,69 68,69 75,65 C78,71 73,79 54,79 C35,79 30,71 33,65 Z" />
+
+    <!-- Badge 1: Single Checkmark Badge (Left) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:pathData="M43,72 A3.2,3.2 0 1,1 42.9,72 Z" />
+    <path
+        android:strokeColor="#16A34A"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M41.5,72 L42.5,73.2 L44.5,70.8" />
+
+    <!-- Badge 2: Double Checkmark / Verified Badge (Center) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.4"
+        android:pathData="M54,73 A3.6,3.6 0 1,1 53.9,73 Z" />
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M52,73 L53.2,74.2 L55.8,71.6" />
+
+    <!-- Badge 3: Clock Timer Badge (Right) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:pathData="M65,72 A3.2,3.2 0 1,1 64.9,72 Z" />
+    <path
+        android:strokeColor="#1E293B"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M65,70.5 L65,72 L66.5,72" />
 
 </vector>
