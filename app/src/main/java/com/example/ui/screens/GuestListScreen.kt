@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,8 +97,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.data.model.InviteChannel
 import com.example.data.model.DietaryPreference
 import com.example.data.model.EventEntity
@@ -601,6 +605,7 @@ fun GuestItemCard(
 
     val status = RsvpStatus.fromString(guest.rsvpStatus)
     val inviteChannel = InviteChannel.fromString(guest.inviteChannel)
+    val guestInitial = guest.name.trim().take(1).uppercase()
 
     ElevatedCard(
         modifier = Modifier
@@ -614,49 +619,60 @@ fun GuestItemCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header Row: Selection Checkbox / Checklist Checkbox / Name / Category / RSVP Badge / Menu
+            // Top Row: Selection Checkbox + Avatar + Guest Name & Category + RSVP Badge + Menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Selection Checkbox for bulk WhatsApp
+                // Selection Checkbox for bulk actions
                 Checkbox(
                     checked = isSelected,
                     onCheckedChange = onSelectedChange,
                     modifier = Modifier.testTag("select_guest_checkbox_${guest.id}")
                 )
-                Spacer(modifier = Modifier.width(2.dp))
 
-                // Checklist checkbox
-                Checkbox(
-                    checked = guest.isCheckedIn,
-                    onCheckedChange = { onToggleCheckIn() },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = StatusAttending,
-                        checkmarkColor = Color.White
-                    ),
-                    modifier = Modifier.testTag("guest_checkin_box_${guest.id}")
-                )
+                // User Avatar Circle with Initial
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (guestInitial.isNotEmpty()) guestInitial else "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
 
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Name & Sub-details
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(
                             text = guest.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         if (guest.plusOnes > 0) {
-                            Spacer(modifier = Modifier.width(6.dp))
                             Surface(
                                 color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
                                     text = "+${guest.plusOnes}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                 )
                             }
                         }
@@ -676,88 +692,17 @@ fun GuestItemCard(
                         if (guest.tableNumber.isNotBlank()) {
                             Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                             Text(
-                                text = guest.tableNumber,
+                                text = "Table: ${guest.tableNumber}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-
-                        Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-
-                        // Invitation Option Mark/Badge (Clickable)
-                        Box {
-                            Surface(
-                                color = if (inviteChannel == InviteChannel.WHATSAPP_ONLY) Color(0xFF25D366).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier
-                                    .clickable { channelDropdownExpanded = true }
-                                    .testTag("invite_channel_badge_${guest.id}")
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (inviteChannel == InviteChannel.WHATSAPP_ONLY) {
-                                        Icon(
-                                            Icons.Default.Chat,
-                                            contentDescription = null,
-                                            tint = Color(0xFF25D366),
-                                            modifier = Modifier.size(11.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text(
-                                            text = "WhatsApp Only",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF25D366)
-                                        )
-                                    } else {
-                                        Icon(
-                                            Icons.Default.Send,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(11.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text(
-                                            text = "Invite",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            }
-
-                            DropdownMenu(
-                                expanded = channelDropdownExpanded,
-                                onDismissRequest = { channelDropdownExpanded = false }
-                            ) {
-                                InviteChannel.entries.forEach { ch ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                if (ch == InviteChannel.WHATSAPP_ONLY) {
-                                                    Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(16.dp))
-                                                } else {
-                                                    Icon(Icons.Default.Send, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                                }
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(ch.displayName)
-                                            }
-                                        },
-                                        onClick = {
-                                            onUpdateInviteChannel(ch)
-                                            channelDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
 
-                // RSVP Badge with click to change
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // RSVP Badge Dropdown
                 Box {
                     Surface(
                         color = status.containerColor,
@@ -767,7 +712,7 @@ fun GuestItemCard(
                             .testTag("rsvp_badge_${guest.id}")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -778,7 +723,7 @@ fun GuestItemCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = status.shortLabel,
+                                text = status.displayName,
                                 color = status.color,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
@@ -838,9 +783,12 @@ fun GuestItemCard(
                     }
                 }
 
-                // Card Overflow Menu
+                // Card Overflow Menu (⋮)
                 Box {
-                    IconButton(onClick = { menuExpanded = true }) {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
                         Icon(Icons.Default.MoreVert, contentDescription = "More Options")
                     }
                     DropdownMenu(
@@ -898,20 +846,135 @@ fun GuestItemCard(
                 }
             }
 
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
 
+            // Second Row: Channel Badge & Check-in / Arrival Action
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Invitation Channel Badge (Clickable to switch)
+                Box {
+                    Surface(
+                        color = if (inviteChannel == InviteChannel.WHATSAPP_ONLY) Color(0xFF25D366).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .clickable { channelDropdownExpanded = true }
+                            .testTag("invite_channel_badge_${guest.id}")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (inviteChannel == InviteChannel.WHATSAPP_ONLY) {
+                                Icon(
+                                    Icons.Default.Chat,
+                                    contentDescription = null,
+                                    tint = Color(0xFF128C7E),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "WhatsApp Only",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF128C7E)
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Send,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Standard Invite",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = channelDropdownExpanded,
+                        onDismissRequest = { channelDropdownExpanded = false }
+                    ) {
+                        InviteChannel.entries.forEach { ch ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (ch == InviteChannel.WHATSAPP_ONLY) {
+                                            Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFF25D366), modifier = Modifier.size(16.dp))
+                                        } else {
+                                            Icon(Icons.Default.Send, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(ch.displayName)
+                                    }
+                                },
+                                onClick = {
+                                    onUpdateInviteChannel(ch)
+                                    channelDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Check-in / Arrival Action Pill
+                Surface(
+                    onClick = onToggleCheckIn,
+                    color = if (guest.isCheckedIn) StatusAttending.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, if (guest.isCheckedIn) StatusAttending else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+                    modifier = Modifier.testTag("guest_checkin_box_${guest.id}")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            if (guest.isCheckedIn) Icons.Default.CheckCircle else Icons.Default.Check,
+                            contentDescription = "Check-in Status",
+                            tint = if (guest.isCheckedIn) StatusAttending else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (guest.isCheckedIn) "Arrived" else "Mark Arrived",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (guest.isCheckedIn) FontWeight.Bold else FontWeight.Medium,
+                            color = if (guest.isCheckedIn) StatusAttending else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             // Plus One Names (if any)
             if (guest.plusOnes > 0 && guest.plusOneNames.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Guest party: ${guest.plusOneNames}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.People, contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Party: ${guest.plusOneNames}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             // Contact & Navigation Action Bar
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -919,7 +982,10 @@ fun GuestItemCard(
             ) {
                 // Address/Masked Info
                 if (isSecurityLocked) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             Icons.Default.Lock,
                             contentDescription = "Contact Info Locked",
@@ -930,7 +996,9 @@ fun GuestItemCard(
                         Text(
                             text = "Contact details protected by PIN/Biometric",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 } else {
@@ -944,7 +1012,7 @@ fun GuestItemCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                Icons.Default.Home,
+                                Icons.Default.LocationOn,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(14.dp)
@@ -954,14 +1022,15 @@ fun GuestItemCard(
                                 text = guest.address,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
                     }
 
-                    // Quick Action Buttons: WhatsApp File + Message, WhatsApp Chat, Call
+                    // Quick Action Buttons: WhatsApp File + Message, WhatsApp Chat, Call, Email
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -982,7 +1051,7 @@ fun GuestItemCard(
                                         Icons.Default.AttachFile,
                                         contentDescription = "Send WhatsApp File & Message",
                                         tint = Color(0xFF25D366),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
@@ -1028,7 +1097,7 @@ fun GuestItemCard(
                             IconButton(
                                 onClick = { ContactActionHelper.makePhoneCall(context, guest.phoneNumber) },
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
                                     .testTag("call_button_${guest.id}")
                             ) {
@@ -1036,7 +1105,7 @@ fun GuestItemCard(
                                     Icons.Default.Call,
                                     contentDescription = "Call Invitee",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
@@ -1053,7 +1122,7 @@ fun GuestItemCard(
                                     )
                                 },
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
                                     .testTag("email_button_${guest.id}")
                             ) {
@@ -1061,7 +1130,7 @@ fun GuestItemCard(
                                     Icons.Default.Email,
                                     contentDescription = "Email Invitee",
                                     tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
