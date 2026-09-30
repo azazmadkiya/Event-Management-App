@@ -478,6 +478,7 @@ fun GuestListScreen(
                 items(items = guests, key = { it.id }) { guest ->
                     GuestItemCard(
                         guest = guest,
+                        event = currentEvent,
                         isSecurityLocked = isSecurityLocked,
                         isChecklistMode = selectedRsvpTab == "CHECKLIST",
                         onCardClick = { guestForDetailView = guest },
@@ -585,6 +586,7 @@ fun GuestListScreen(
 @Composable
 fun GuestItemCard(
     guest: GuestEntity,
+    event: EventEntity? = null,
     isSecurityLocked: Boolean,
     isChecklistMode: Boolean,
     onCardClick: () -> Unit = {},
@@ -1086,6 +1088,7 @@ fun GuestItemCard(
                         if (showWhatsAppDialog) {
                             SendWhatsAppDialog(
                                 guest = guest,
+                                event = event,
                                 eventTitle = eventTitle,
                                 eventId = guest.eventId,
                                 onDismiss = { showWhatsAppDialog = false }
@@ -1173,94 +1176,194 @@ fun GuestItemCard(
 @Composable
 fun SendWhatsAppDialog(
     guest: GuestEntity,
+    event: EventEntity? = null,
     eventTitle: String,
     eventId: String = guest.eventId,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // 5 Invite Types: Formal Invite, Casual Invite, RSVP Reminder, Location & Schedule, Custom Message
+    val templates = listOf(
+        "Formal Invite" to {
+            val dateStr = if (event != null) SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.US).format(Date(event.startTimestamp)) else ""
+            val venue = event?.venueName ?: ""
+            "Dear ${guest.name},\n\nWe request the pleasure of your company at $eventTitle" +
+                    (if (dateStr.isNotEmpty()) " on $dateStr" else "") +
+                    (if (venue.isNotEmpty()) " at $venue" else "") +
+                    ". We would be honored by your gracious presence.\n\nPlease confirm your RSVP status at your earliest convenience."
+        },
+        "Casual Invite" to {
+            val dateStr = if (event != null) SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.US).format(Date(event.startTimestamp)) else ""
+            "Hey ${guest.name}! 🎉 You're invited to $eventTitle" +
+                    (if (dateStr.isNotEmpty()) " on $dateStr" else "") +
+                    "! It's going to be an amazing celebration. Can't wait to see you there! Let us know if you can make it! 🥳"
+        },
+        "RSVP Reminder" to {
+            "Hi ${guest.name},\n\nFriendly reminder to kindly update your RSVP for $eventTitle. We are finalizing our arrangements and would love to know if you can attend. Thank you! 🙏"
+        },
+        "Location & Schedule" to {
+            val venue = event?.venueName ?: "Venue"
+            val address = event?.venueAddress ?: ""
+            val dateStr = if (event != null) SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.US).format(Date(event.startTimestamp)) else ""
+            "Hello ${guest.name}!\n\nHere are the event details for $eventTitle:\n📍 Venue: $venue\n📌 Address: ${if (address.isNotBlank()) address else "See attached location card"}\n📅 Date & Time: $dateStr\n\nLooking forward to seeing you!"
+        },
+        "Custom message" to {
+            "Hello ${guest.name}! You are cordially invited to $eventTitle. Please let us know if you can attend."
+        }
+    )
+
+    var selectedTemplateIndex by remember { mutableStateOf(0) }
     var message by remember {
-        mutableStateOf("Hi ${guest.name}, you are cordially invited to $eventTitle! Please confirm your attendance.")
+        mutableStateOf(templates[0].second())
     }
 
     var savedAttachments by remember {
         mutableStateOf(com.example.util.SavedAttachmentHelper.getSavedAttachments(context, eventId))
     }
 
+    val targetNumber = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Chat,
-                    contentDescription = null,
-                    tint = Color(0xFF25D366),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Send WhatsApp Invite", fontWeight = FontWeight.Bold)
+                Surface(
+                    color = Color(0xFF25D366).copy(alpha = 0.15f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Chat,
+                            contentDescription = null,
+                            tint = Color(0xFF25D366),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text("1-By-1 WhatsApp Invite", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Recipient: ${guest.name}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Recipient Info Card
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${guest.name} (${if (targetNumber.isNotBlank()) targetNumber else "No phone"})",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        if (guest.plusOnes > 0) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "+${guest.plusOnes} guest",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Invite Type Selection Row
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Select Invite Type:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        itemsIndexed(templates) { index, template ->
+                            val isSelected = selectedTemplateIndex == index
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedTemplateIndex = index
+                                    message = template.second()
+                                },
+                                label = {
+                                    Text(
+                                        text = template.first,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Quick Tag Inserts for Custom Message
+                if (selectedTemplateIndex == 4) { // Custom message
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${guest.name} • ${if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Text("Tags:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                        listOf(
+                            "+ Name" to "${guest.name}",
+                            "+ Event" to eventTitle,
+                            "+ Venue" to (event?.venueName ?: "Venue"),
+                            "+ Table" to (if (guest.tableNumber.isNotBlank()) "Table: ${guest.tableNumber}" else "")
+                        ).forEach { tag ->
+                            if (tag.second.isNotEmpty()) {
+                                Surface(
+                                    onClick = { message = "$message ${tag.second}".trim() },
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = tag.first,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
-                // Quick Message Templates
-                Text("Quick Templates:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item {
-                        FilterChip(
-                            selected = false,
-                            onClick = { message = "Dear ${guest.name}, we request the pleasure of your company at $eventTitle. Please RSVP at your earliest convenience." },
-                            label = { Text("Formal Invite") }
-                        )
-                    }
-                    item {
-                        FilterChip(
-                            selected = false,
-                            onClick = { message = "Hey ${guest.name}! Join us for $eventTitle. Can't wait to see you there! 🎉" },
-                            label = { Text("Casual Invite") }
-                        )
-                    }
-                    item {
-                        FilterChip(
-                            selected = false,
-                            onClick = { message = "Hi ${guest.name}, friendly reminder to kindly update your RSVP for $eventTitle. Thank you!" },
-                            label = { Text("RSVP Reminder") }
-                        )
-                    }
-                }
-
+                // Message Text Field
                 OutlinedTextField(
                     value = message,
                     onValueChange = { message = it },
-                    label = { Text("Personalized Message *") },
-                    maxLines = 5,
+                    label = { Text("WhatsApp Message Text *") },
+                    maxLines = 6,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().testTag("whatsapp_message_input")
                 )
@@ -1272,7 +1375,7 @@ fun SendWhatsAppDialog(
                     onAttachmentsUpdated = { updated ->
                         savedAttachments = updated
                     },
-                    title = "Attach Cards & Files",
+                    title = "Attach Cards & Files (Auto-attached to WhatsApp)",
                     showExplanation = true
                 )
             }
@@ -1280,7 +1383,10 @@ fun SendWhatsAppDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val targetNumber = if (guest.whatsAppNumber.isNotBlank()) guest.whatsAppNumber else guest.phoneNumber
+                    if (targetNumber.isBlank()) {
+                        android.widget.Toast.makeText(context, "Please enter a valid phone or WhatsApp number for ${guest.name}", android.widget.Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     val uris = savedAttachments.map { Uri.parse(it.uriString) }
                     ContactActionHelper.sendWhatsAppWithMultipleFiles(context, targetNumber, message, uris)
                     onDismiss()
@@ -1308,11 +1414,22 @@ fun BroadcastMessageDialog(
     selectedGuestIds: Set<String>,
     eventId: String,
     eventTitle: String,
+    event: EventEntity? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
+    val broadcastTemplates = listOf(
+        "Formal Invite" to "Dear [Guest Name],\n\nWe request the pleasure of your company at $eventTitle. We would be honored by your gracious presence.\n\nPlease confirm your RSVP at your earliest convenience.",
+        "Casual Invite" to "Hey [Guest Name]! 🎉 You're invited to $eventTitle! It's going to be a wonderful celebration. Can't wait to see you there! Let us know if you can make it! 🥳",
+        "RSVP Reminder" to "Hi [Guest Name],\n\nFriendly reminder to kindly update your RSVP for $eventTitle. We are finalizing our guest list and would love to know if you'll attend. Thank you! 🙏",
+        "Location & Schedule" to "Hello [Guest Name]!\n\nHere are the event details for $eventTitle:\n📍 Venue: ${event?.venueName ?: "Venue"}\n📌 Address: ${event?.venueAddress ?: "Venue Address"}\n\nLooking forward to seeing you!",
+        "Custom message" to "Hello [Guest Name]! You are cordially invited to $eventTitle. Please let us know if you can attend."
+    )
+
+    var selectedTemplateIndex by remember { mutableStateOf(0) }
     var message by remember {
-        mutableStateOf("Hi [Guest Name], you are cordially invited to $eventTitle! Please confirm your attendance.")
+        mutableStateOf(broadcastTemplates[0].second)
     }
     var targetGroup by remember { mutableStateOf("ATTENDING") }
     var savedAttachments by remember {
@@ -1337,29 +1454,38 @@ fun BroadcastMessageDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Chat,
-                    contentDescription = null,
-                    tint = Color(0xFF25D366),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Surface(
+                    color = Color(0xFF25D366).copy(alpha = 0.15f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Chat,
+                            contentDescription = null,
+                            tint = Color(0xFF25D366),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = if (selectedGuestIds.isNotEmpty()) "Send WhatsApp (${selectedGuestIds.size} Selected)" else "Broadcast WhatsApp Message",
-                    fontWeight = FontWeight.Bold
+                    text = if (selectedGuestIds.isNotEmpty()) "Send WhatsApp (${selectedGuestIds.size} Selected)" else "1-by-1 WhatsApp Broadcast",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
         },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = if (selectedGuestIds.isNotEmpty())
-                        "Sending personalized WhatsApp message and attached files to ${selectedGuestIds.size} selected guest(s)."
+                        "Personalized 1-by-1 WhatsApp sending for ${selectedGuestIds.size} selected guest(s) with attached files."
                     else
-                        "Send personalized WhatsApp invitations with attached cards and files to your guests.",
+                        "Send personalized WhatsApp invitations with attached cards and files to your guests 1-by-1.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1385,11 +1511,42 @@ fun BroadcastMessageDialog(
                     }
                 }
 
+                // Invite Type Selection Row
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Invite Type Template:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        itemsIndexed(broadcastTemplates) { index, template ->
+                            val isSelected = selectedTemplateIndex == index
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedTemplateIndex = index
+                                    message = template.second
+                                },
+                                label = {
+                                    Text(
+                                        text = template.first,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = message,
                     onValueChange = { message = it },
-                    label = { Text("Message Template * ([Guest Name] will be auto-replaced)") },
-                    maxLines = 5,
+                    label = { Text("Message Template * ([Guest Name] auto-replaced)") },
+                    maxLines = 6,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().testTag("broadcast_message_input")
                 )
@@ -1401,7 +1558,7 @@ fun BroadcastMessageDialog(
                     onAttachmentsUpdated = { updated ->
                         savedAttachments = updated
                     },
-                    title = "Broadcast Media & Cards",
+                    title = "Broadcast Media & Invitation Cards",
                     showExplanation = true
                 )
             }
@@ -1432,7 +1589,7 @@ fun BroadcastMessageDialog(
                 Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (selectedGuestIds.isNotEmpty()) "Send to Selected (${selectedGuestIds.size})" else "Start Bulk Send",
+                    text = if (selectedGuestIds.isNotEmpty()) "Start 1-by-1 Send (${selectedGuestIds.size})" else "Start 1-by-1 Send",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )

@@ -143,24 +143,6 @@ fun GuestDetailDialog(
         mutableStateOf(com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId))
     }
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, guest.eventId, uri)
-            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
-        }
-    }
-
-    val pdfPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            com.example.util.SavedAttachmentHelper.copyAndSaveAttachment(context, guest.eventId, uri)
-            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
-        }
-    }
-
     val rsvpStatus = RsvpStatus.fromString(guest.rsvpStatus)
     val inviteChannel = InviteChannel.fromString(guest.inviteChannel)
 
@@ -336,81 +318,15 @@ fun GuestDetailDialog(
                 )
 
                 // File Attachment Section
-                Text(
-                    text = "Saved Attachments (Auto-Saved for Event)",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
+                com.example.ui.components.UploadAttachmentSection(
+                    eventId = guest.eventId,
+                    savedAttachments = savedAttachments,
+                    onAttachmentsUpdated = { updated ->
+                        savedAttachments = updated
+                    },
+                    title = "Attach Cards & Files (Auto-attached to WhatsApp)",
+                    showExplanation = true
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add Image", fontSize = 12.sp)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            pdfPickerLauncher.launch("application/pdf")
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add PDF", fontSize = 12.sp)
-                    }
-                }
-
-                if (savedAttachments.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        savedAttachments.forEach { att ->
-                            Surface(
-                                color = Color(0xFF25D366).copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Icon(
-                                        if (att.mimeType.contains("pdf")) Icons.Default.PictureAsPdf else Icons.Default.Image,
-                                        contentDescription = null,
-                                        tint = Color(0xFF128C7E),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = att.fileName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF128C7E),
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            com.example.util.SavedAttachmentHelper.deleteSavedAttachment(context, att.id)
-                                            savedAttachments = com.example.util.SavedAttachmentHelper.getSavedAttachments(context, guest.eventId)
-                                        },
-                                        modifier = Modifier.size(20.dp)
-                                    ) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Remove file", tint = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         },
         confirmButton = {
